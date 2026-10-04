@@ -34,6 +34,8 @@ public:
     {
         return Unary_Op(arg.shallowCopy());
     }
+
+    HOST_DEVICE
     inline const value_type get_element(const size_t i) const
     {
         return OP::apply(arg.get_element(i));
@@ -54,6 +56,7 @@ public:
 
 struct Array_opp
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return -u;  }
 };
 template <class RHS>
@@ -64,6 +67,7 @@ static inline const Unary_Op<Array_opp,RHS> operator-(const RHS& rhs)
 
 struct Array_abs
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::abs(u);  }
 };
 template <class RHS>
@@ -76,6 +80,7 @@ static inline const Unary_Op<Array_abs,RHS> abs(const RHS& rhs)
 // exp
 struct Array_exp
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::exp(u);  }
 };
 template <class RHS>
@@ -88,6 +93,7 @@ static inline const Unary_Op<Array_exp,RHS> exp(const RHS& rhs)
 // log
 struct Array_log
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::log(u);  }
 };
 template <class RHS>
@@ -98,6 +104,7 @@ static inline const Unary_Op<Array_log,RHS> log(const RHS& rhs)
 
 struct Array_log10
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::log10(u);  }
 };
 template <class RHS>
@@ -108,6 +115,7 @@ static inline const Unary_Op<Array_log10,RHS> log10(const RHS& rhs)
 
 struct Array_log2
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::log2(u);  }
 };
 template <class RHS>
@@ -118,6 +126,7 @@ static inline const Unary_Op<Array_log2,RHS> log2(const RHS& rhs)
 
 struct Array_sqrt
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::sqrt(u);  }
 };
 template <class RHS>
@@ -133,6 +142,7 @@ static inline const Unary_Op<Array_sqrt,RHS> sqrt(const RHS& rhs)
 // sin, asin, sinh, asinh
 struct Array_sin
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::sin(u);  }
 };
 template <class RHS>
@@ -142,6 +152,7 @@ static inline const Unary_Op<Array_sin,RHS> sin(const RHS& rhs)
 }
 struct Array_asin
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::asin(u);  }
 };
 template <class RHS>
@@ -151,6 +162,7 @@ static inline const Unary_Op<Array_asin,RHS> asin(const RHS& rhs)
 }
 struct Array_sinh
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::sinh(u);  }
 };
 template <class RHS>
@@ -160,6 +172,7 @@ static inline const Unary_Op<Array_sinh,RHS> sinh(const RHS& rhs)
 }
 struct Array_asinh
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::asinh(u);  }
 };
 template <class RHS>
@@ -171,6 +184,7 @@ static inline const Unary_Op<Array_asinh,RHS> asinh(const RHS& rhs)
 // cos, acos, cosh, acosh
 struct Array_cos
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::cos(u);  }
 };
 template <class RHS>
@@ -180,6 +194,7 @@ static inline const Unary_Op<Array_cos,RHS> cos(const RHS& rhs)
 }
 struct Array_acos
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::acos(u);  }
 };
 template <class RHS>
@@ -189,6 +204,7 @@ static inline const Unary_Op<Array_acos,RHS> acos(const RHS& rhs)
 }
 struct Array_cosh
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::cosh(u);  }
 };
 template <class RHS>
@@ -198,6 +214,7 @@ static inline const Unary_Op<Array_cosh,RHS> cosh(const RHS& rhs)
 }
 struct Array_acosh
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::acosh(u);  }
 };
 template <class RHS>
@@ -210,6 +227,7 @@ static inline const Unary_Op<Array_acosh,RHS> acosh(const RHS& rhs)
 // tan, atan, tanh, atanh
 struct Array_tan
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::tan(u);  }
 };
 template <class RHS>
@@ -219,6 +237,7 @@ static inline const Unary_Op<Array_tan,RHS> tan(const RHS& rhs)
 }
 struct Array_atan
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::atan(u);  }
 };
 template <class RHS>
@@ -228,6 +247,7 @@ static inline const Unary_Op<Array_atan,RHS> atan(const RHS& rhs)
 }
 struct Array_tanh
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::tanh(u);  }
 };
 template <class RHS>
@@ -237,6 +257,7 @@ static inline const Unary_Op<Array_tanh,RHS> tanh(const RHS& rhs)
 }
 struct Array_atanh
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::atanh(u);  }
 };
 template <class RHS>
@@ -249,6 +270,7 @@ static inline const Unary_Op<Array_atanh,RHS> atanh(const RHS& rhs)
 // round, floor, ceil
 struct Array_round
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::round(u);  }
 };
 template <class RHS>
@@ -259,6 +281,7 @@ static inline const Unary_Op<Array_round,RHS> round(const RHS& rhs)
 
 struct Array_floor
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::floor(u);  }
 };
 template <class RHS>
@@ -269,6 +292,7 @@ static inline const Unary_Op<Array_floor,RHS> floor(const RHS& rhs)
 
 struct Array_ceil
 {
+    HOST_DEVICE
     static inline const auto apply(const auto u)    {   return std::ceil(u);  }
 };
 template <class RHS>

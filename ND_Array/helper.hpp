@@ -18,7 +18,18 @@
     #define PARALLEL_FOR_REDUCE(op,n,var)
 #endif
 
+#ifdef __CUDACC__
+#define HOST_DEVICE __host__ __device__
+#else
+#define HOST_DEVICE
+#endif
 
+
+enum ComputeBackend
+{
+    CPU,
+    CUDA
+};
 
 namespace ND {
 
@@ -130,21 +141,21 @@ struct base_traits<Binary_Op<E1,OP,E2>>
 
 
 // ND Array
-template<typename T, size_t firstDim, size_t... RestDims>
+template<ComputeBackend B, typename T, size_t firstDim, size_t... RestDims>
 class Array;
 
 
-template<typename T, size_t firstDim, size_t... RestDims>
-struct base_traits<Array<T, firstDim, RestDims...>>
+template<ComputeBackend B, typename T, size_t firstDim, size_t... RestDims>
+struct base_traits<Array<B, T, firstDim, RestDims...>>
 {
     typedef T value_type;
 
 
     template<typename any_type>
-    using generic_terminal_type = Array<any_type, firstDim, RestDims...>;
+    using generic_terminal_type = Array<B, any_type, firstDim, RestDims...>;
 
     template<typename any_type>
-    using generic_terminal_sub_type = Array<any_type, RestDims...>;
+    using generic_terminal_sub_type = Array<B, any_type, RestDims...>;
 
 
     typedef generic_terminal_type<value_type> terminal_type;
@@ -152,14 +163,14 @@ struct base_traits<Array<T, firstDim, RestDims...>>
 };
 
 
-template<typename T, size_t Dim>
-struct base_traits<Array<T, Dim>>
+template<ComputeBackend B, typename T, size_t Dim>
+struct base_traits<Array<B, T, Dim>>
 {
     typedef T value_type;
 
 
     template<typename any_type>
-    using generic_terminal_type = Array<any_type, Dim>;
+    using generic_terminal_type = Array<B, any_type, Dim>;
 
     template<typename any_type>
     using generic_terminal_sub_type = any_type;
@@ -172,7 +183,7 @@ struct base_traits<Array<T, Dim>>
 
 
 // Mask Array
-template <typename T, size_t firstDim, size_t... RestDims>
+template <ComputeBackend B, typename T, size_t firstDim, size_t... RestDims>
 class Mask_Array;
 
 

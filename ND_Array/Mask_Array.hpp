@@ -8,10 +8,10 @@ namespace ND {
 
 
 // Mask Array
-template <typename T, size_t firstDim, size_t... RestDims>
+template <ComputeBackend Backend, typename T, size_t firstDim, size_t... RestDims>
 class Mask_Array
 {
-    template<typename T_, size_t f_Dim, size_t... R_dims>
+    template<ComputeBackend Backend_, typename T_, size_t f_Dim, size_t... R_dims>
     friend class Array;
 
 protected:
@@ -19,11 +19,11 @@ protected:
     static constexpr size_t length = firstDim * (RestDims * ...);
     using value_type = T;
 
-    Array<T, firstDim, RestDims...>& arr_;
-    const Array<bool, firstDim, RestDims...>& mask_;
+    Array<Backend, T, firstDim, RestDims...>& arr_;
+    const Array<Backend, bool, firstDim, RestDims...>& mask_;
 
 
-    Mask_Array(Array<T, firstDim, RestDims...>& arr, const Array<bool, firstDim, RestDims...>& mask)
+    Mask_Array(Array<Backend, T, firstDim, RestDims...>& arr, const Array<Backend, bool, firstDim, RestDims...>& mask)
     : arr_(arr), mask_(mask)
     {}
 
@@ -72,8 +72,8 @@ public:
 };
 
 
-template <typename T, size_t Dim>
-class Mask_Array<T, Dim>
+template <ComputeBackend Backend, typename T, size_t Dim>
+class Mask_Array<Backend, T, Dim>
 {
     template<typename T_, size_t f_Dim, size_t... R_dims>
     friend class Array;
@@ -83,11 +83,11 @@ protected:
     static constexpr size_t length = Dim;
     using value_type = T;
 
-    Array<T, Dim>& arr_;
-    const Array<bool, Dim>& mask_;
+    Array<Backend, T, Dim>& arr_;
+    const Array<Backend, bool, Dim>& mask_;
 
 
-    Mask_Array(Array<T,Dim>& arr, const Array<bool,Dim>& mask)
+    Mask_Array(Array<Backend, T,Dim>& arr, const Array<Backend, bool,Dim>& mask)
     : arr_(arr), mask_(mask)
     {}
 

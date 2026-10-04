@@ -20,6 +20,7 @@ public:
     typedef typename base_traits<E>::terminal_sub_type terminal_sub_type;
     typedef typename base_traits<E>::value_type value_type;
 
+    HOST_DEVICE
     inline const value_type get_element(const size_t i) const   {  return static_cast<const E&>(*this).get_element(i);   }
 
     Array_Expression shallowCopy() const

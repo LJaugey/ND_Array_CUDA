@@ -10,18 +10,59 @@
 #include "Binary_Expression.hpp"
 #include "Mask_Array.hpp"
 
+#ifdef __CUDACC__
+#define NON_CPU_ComputeBackend
+
+#define BLOCK_DIM_1D 1024
+#define BLOCK_DIM_LOG2_1D 10
+
+
+namespace ND::CUDA
+{
+template<typename T, int N>
+__global__ void SetMemory_K(T* data_, T val)
+{
+    const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= N)
+        return;
+
+    data_[idx] = val;
+}
+template<typename T, int N>
+__global__ void SetMemory_K(T* data, T* newData)
+{
+    const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= N)
+        return;
+
+    data[idx] = newData[idx];
+}
+template<typename E, int N>
+__global__ void CollapseExpression_K(typename E::value_type* data_, const E expr, const size_t shift = 0)
+{
+    const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= N)
+        return;
+
+    data_[idx] = expr.get_element(shift + idx);
+}
+}
+
+#define CUDA_FUNC(x) x
+#else
+#define CUDA_FUNC(x)
+#endif
 
 
 namespace ND {
 
-
-template <typename T, size_t firstDim, size_t... RestDims>
-class Array : public Array_Expression<Array<T, firstDim, RestDims...>>
+template <ComputeBackend Backend, typename T, size_t firstDim, size_t... RestDims>
+class Array : public Array_Expression<Array<Backend, T, firstDim, RestDims...>>
 {
-    template<typename T_, size_t f_Dim, size_t... R_dims>
+    template<ComputeBackend Backend_, typename T_, size_t f_Dim, size_t... R_dims>
     friend class Array;
 
-    template<typename T_, size_t f_Dim, size_t... R_dims>
+    template<ComputeBackend Backend_, typename T_, size_t f_Dim, size_t... R_dims>
     friend class Mask_Array;
 
 public:
@@ -46,9 +87,13 @@ protected:
     value_type* data_;
     bool is_original;
 
+#ifdef __CUDACC__
+    static constexpr int GRID_SIZE = (length + BLOCK_DIM_1D - 1) >> BLOCK_DIM_LOG2_1D;
+#endif
 
 public:
 
+    HOST_DEVICE
     inline const value_type get_element(const size_t i) const     {   return data_[i];    }
 
     // Base constructor
@@ -66,7 +111,7 @@ public:
     }
 
     // copy constructor
-    Array(const Array<T, firstDim, RestDims...>& other)
+    Array(const Array<Backend, T, firstDim, RestDims...>& other)
     : is_original(true)
     {
         _AllocateMemory();
@@ -88,20 +133,20 @@ public:
         return Array(data_, false);
     }
     // copy assigment operator
-    const Array<T, firstDim, RestDims...>& operator=(const Array<T, firstDim, RestDims...>& other)
+    const Array<Backend, T, firstDim, RestDims...>& operator=(const Array<Backend, T, firstDim, RestDims...>& other)
     {
         _SetMemory(other.data_);
 
         return *this;
     }
-    const Array<T, firstDim, RestDims...>& operator=(const value_type& val)
+    const Array<Backend, T, firstDim, RestDims...>& operator=(const value_type& val)
     {
         _SetMemory(val);
         
         return *this;
     }
     // constructor from N-1 dimensional array
-    Array(const Array<T, RestDims...>& slice)
+    Array(const Array<Backend, T, RestDims...>& slice)
     : is_original(true)
     {
         _AllocateMemory();
@@ -122,7 +167,7 @@ public:
     {
         _AllocateMemory();
         
-        _CollapseExpression(expr);
+        _CollapseExpression(expr, shift);
     }
     template <typename E>
     requires(is_Array_Expression<E>::value)
@@ -134,7 +179,17 @@ public:
     }
 
     // destructor
-    ~Array() {  if(is_original)    delete[] data_;   }
+    ~Array()
+    {
+        if(is_original)
+        {
+            if constexpr(Backend == ComputeBackend::CPU)
+                delete[] data_;
+
+            else if constexpr(Backend == ComputeBackend::CUDA)
+                cudaFree(data_);
+        }
+    }
 
 
 
@@ -166,28 +221,28 @@ public:
 
 
     // access element
-    inline Array<T, RestDims...> operator[](size_t index)
+    inline Array<Backend, T, RestDims...> operator[](size_t index)
     {
-        return Array<T, RestDims...>(data_ + index * (RestDims * ...), false);  // Guaranteed copy elision
+        return Array<Backend, T, RestDims...>(data_ + index * (RestDims * ...), false);  // Guaranteed copy elision
     }
-    inline const Array<T, RestDims...> operator[](size_t index) const
+    inline const Array<Backend, T, RestDims...> operator[](size_t index) const
     {
-        return Array<T, RestDims...>(data_ + index * (RestDims * ...), false);  // Guaranteed copy elision
+        return Array<Backend, T, RestDims...>(data_ + index * (RestDims * ...), false);  // Guaranteed copy elision
     }
 
-    Mask_Array<T, firstDim, RestDims...> operator[](const Array<bool, firstDim, RestDims...>& mask)
+    Mask_Array<Backend, T, firstDim, RestDims...> operator[](const Array<Backend, bool, firstDim, RestDims...>& mask)
     {
         return Mask_Array(*this, mask);
     }
 
 
-    const Array<T, firstDim, RestDims...>& fill(const value_type& val)
+    const Array<Backend, T, firstDim, RestDims...>& fill(const value_type& val)
     {
         _SetMemory(val);
 
         return *this;
     }
-    const Array<T, firstDim, RestDims...>& fill(const Array<T, firstDim, RestDims...>& other)
+    const Array<Backend, T, firstDim, RestDims...>& fill(const Array<Backend, T, firstDim, RestDims...>& other)
     {
         if(data_ != other.data_)
         {
@@ -198,7 +253,7 @@ public:
     }
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, firstDim, RestDims...>& fill(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& fill(const E& expr)
     {
         _CollapseExpression(expr);
 
@@ -220,14 +275,14 @@ public:
     // += operator
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, firstDim, RestDims...>& operator+=(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& operator+=(const E& expr)
     {
         *this = *this + expr;
 
         return *this;
     }
     // scalar
-    const Array<T, firstDim, RestDims...>& operator+=(const value_type& val)
+    const Array<Backend, T, firstDim, RestDims...>& operator+=(const value_type& val)
     {
         *this = *this + val;
 
@@ -237,14 +292,14 @@ public:
     // -= operator
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, firstDim, RestDims...>& operator-=(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& operator-=(const E& expr)
     {
         *this = *this - expr;
 
         return *this;
     }
     // scalar
-    const Array<T, firstDim, RestDims...>& operator-=(const value_type& val)
+    const Array<Backend, T, firstDim, RestDims...>& operator-=(const value_type& val)
     {
         *this = *this - val;
 
@@ -254,14 +309,14 @@ public:
     // *= operator
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, firstDim, RestDims...>& operator*=(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& operator*=(const E& expr)
     {
         *this = *this * expr;
 
         return *this;
     }
     // scalar
-    const Array<T, firstDim, RestDims...>& operator*=(const value_type& val)
+    const Array<Backend, T, firstDim, RestDims...>& operator*=(const value_type& val)
     {
         *this = *this * val;
 
@@ -271,14 +326,14 @@ public:
     // /= operator
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, firstDim, RestDims...>& operator/=(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& operator/=(const E& expr)
     {
         *this = *this / expr;
 
         return *this;
     }
     // scalar
-    const Array<T, firstDim, RestDims...>& operator/=(const value_type& val)
+    const Array<Backend, T, firstDim, RestDims...>& operator/=(const value_type& val)
     {
         value_type inv_val = 1.0/val;
 
@@ -290,41 +345,67 @@ protected:
 
     void _AllocateMemory()
     {
-        data_ = new value_type[length];
+        if constexpr(Backend == ComputeBackend::CPU)
+            data_ = new value_type[length];
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            cudaMalloc(&data_, length * sizeof(value_type));
     }
+
     void _SetMemory(const value_type& val)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
+        if constexpr(Backend == ComputeBackend::CPU)
         {
-            data_[i] = val;
+            PARALLEL_FOR(length)
+            for (size_t i = 0; i < length; ++i)
+            {
+                data_[i] = val;
+            }
         }
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            CUDA_FUNC((CUDA::SetMemory_K<value_type, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, val)));
     }
+
     void _SetMemory(value_type* newData)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
+        if constexpr(Backend == ComputeBackend::CPU)
         {
-            data_[i] = newData[i];
+            PARALLEL_FOR(length)
+            for (size_t i = 0; i < length; ++i)
+            {
+                data_[i] = newData[i];
+            }
         }
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            CUDA_FUNC((CUDA::SetMemory_K<value_type, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, newData)));
     }
+
     template<typename E>
     requires(is_Array_Expression<E>::value)
     void _CollapseExpression(const E& expr, const size_t shift = 0)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
+        if constexpr(Backend == ComputeBackend::CPU)
         {
-            data_[i] = expr.get_element(i);
+            PARALLEL_FOR(length)
+            for (size_t i = 0; i < length; ++i)
+            {
+                data_[i] = expr.get_element(i);
+            }
         }
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            CUDA_FUNC((CUDA::CollapseExpression_K<E, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, expr, shift)));
     }
 };
 
 
 
 // ostream
-template <typename T, size_t firstDim, size_t... RestDims>
-std::ostream& operator<<(std::ostream& output, const Array<T, firstDim, RestDims...>& other)
+template <ComputeBackend Backend, typename T, size_t firstDim, size_t... RestDims>
+    requires(Backend == ComputeBackend::CPU)
+std::ostream& operator<<(std::ostream& output, const Array<Backend, T, firstDim, RestDims...>& other)
 {
     if (sizeof...(RestDims) > 0)
     {
@@ -342,14 +423,20 @@ std::ostream& operator<<(std::ostream& output, const Array<T, firstDim, RestDims
 
 
 
-template <typename T, size_t Dim>
-class Array<T, Dim> : public Array_Expression<Array<T, Dim>>
+
+template <ComputeBackend Backend, typename T, size_t Dim>
+class Array<Backend, T, Dim> : public Array_Expression<Array<Backend, T, Dim>>
 {
-    template<typename T_, size_t f_Dim, size_t... R_dims>
+    template<ComputeBackend Backend_, typename T_, size_t f_Dim, size_t... R_dims>
     friend class Array;
 
-    template<typename T_, size_t f_Dim, size_t... R_dims>
+    template<ComputeBackend Backend_, typename T_, size_t f_Dim, size_t... R_dims>
     friend class Mask_Array;
+    
+    //template<typename E1, typename OP, typename E2>
+    //friend class Binary_Op;
+    //template<typename E, typename OP>
+    //friend class Unary_Op;
     
 public:
 
@@ -373,9 +460,13 @@ protected:
     value_type* data_;
     bool is_original;
 
+#ifdef __CUDACC__
+    static constexpr int GRID_SIZE = (length + BLOCK_DIM_1D - 1) >> BLOCK_DIM_LOG2_1D;
+#endif
     
 public:
 
+    HOST_DEVICE
     inline const value_type get_element(size_t i) const     {   return data_[i];    }
 
     // Base constructor
@@ -393,7 +484,7 @@ public:
     }
 
     // copy constructor
-    Array(const Array<T, Dim>& other)
+    Array(const Array<Backend, T, Dim>& other)
     : is_original(true)
     {
         _AllocateMemory();
@@ -415,13 +506,13 @@ public:
         return Array(data_, false);
     }
     // copy assigment operator
-    const Array<T, Dim>& operator=(const Array<T, Dim>& other)
+    const Array<Backend, T, Dim>& operator=(const Array<Backend, T, Dim>& other)
     {
         _SetMemory(other.data_);
 
         return *this;
     }
-    const Array<T, Dim>& operator=(const value_type& val)
+    const Array<Backend, T, Dim>& operator=(const value_type& val)
     {
         _SetMemory(val);
         
@@ -441,7 +532,7 @@ public:
     }
     template <typename E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, Dim>& operator=(const E& expr)
+    const Array<Backend, T, Dim>& operator=(const E& expr)
     {
         _CollapseExpression(expr);
 
@@ -449,7 +540,17 @@ public:
     }
 
     // destructor
-    ~Array() {  if(is_original)    delete[] data_;   }
+    ~Array()
+    {
+        if(is_original)
+        {
+            if constexpr(Backend == ComputeBackend::CPU)
+                delete[] data_;
+
+            else if constexpr(Backend == ComputeBackend::CUDA)
+                cudaFree(data_);
+        }
+    }
 
 
 
@@ -459,18 +560,18 @@ public:
     inline value_type& operator[](size_t index)                 {   return data_[index];    }
     inline const value_type operator[](size_t index) const      {   return data_[index];    }
 
-    Mask_Array<T, Dim> operator[](const Array<bool, Dim> mask)  {   return Mask_Array(*this, mask); }
+    Mask_Array<Backend, T, Dim> operator[](const Array<Backend, bool, Dim> mask)  {   return Mask_Array(*this, mask); }
 
 
 
 
-    const Array<T, Dim>& fill(const value_type& val)
+    const Array<Backend, T, Dim>& fill(const value_type& val)
     {
         _SetMemory(val);
 
         return *this;
     }
-    const Array<T, Dim>& fill(const Array<T, Dim>& other)
+    const Array<Backend, T, Dim>& fill(const Array<Backend, T, Dim>& other)
     {
         if(data_ != other.data_)
         {
@@ -481,7 +582,7 @@ public:
     }
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, Dim>& fill(const E& expr)
+    const Array<Backend, T, Dim>& fill(const E& expr)
     {
         _CollapseExpression(expr);
 
@@ -505,14 +606,14 @@ public:
     // += operator
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, Dim>& operator+=(const E& expr)
+    const Array<Backend, T, Dim>& operator+=(const E& expr)
     {
         *this = *this + expr;
 
         return *this;
     }
     // scalar
-    const Array<T, Dim>& operator+=(const value_type& val)
+    const Array<Backend, T, Dim>& operator+=(const value_type& val)
     {
         *this = *this + val;
 
@@ -522,14 +623,14 @@ public:
     // -= operator
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, Dim>& operator-=(const E& expr)
+    const Array<Backend, T, Dim>& operator-=(const E& expr)
     {
         *this = *this - expr;
 
         return *this;
     }
     // scalar
-    const Array<T, Dim>& operator-=(const value_type& val)
+    const Array<Backend, T, Dim>& operator-=(const value_type& val)
     {
         *this = *this - val;
 
@@ -539,14 +640,14 @@ public:
     // *= operator
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, Dim>& operator*=(const E& expr)
+    const Array<Backend, T, Dim>& operator*=(const E& expr)
     {
         *this = *this * expr;
 
         return *this;
     }
     // scalar
-    const Array<T, Dim>& operator*=(const value_type& val)
+    const Array<Backend, T, Dim>& operator*=(const value_type& val)
     {
         *this = *this * val;
 
@@ -556,14 +657,14 @@ public:
     // /= operator
     template<class E>
     requires(is_Array_Expression<E>::value)
-    const Array<T, Dim>& operator/=(const E& expr)
+    const Array<Backend, T, Dim>& operator/=(const E& expr)
     {
         *this = *this / expr;
 
         return *this;
     }
     // scalar
-    const Array<T, Dim>& operator/=(const value_type& val)
+    const Array<Backend, T, Dim>& operator/=(const value_type& val)
     {
         value_type inv_val = 1.0/val;
 
@@ -576,33 +677,58 @@ protected:
 
     void _AllocateMemory()
     {
-        data_ = new value_type[length];
+        if constexpr(Backend == ComputeBackend::CPU)
+            data_ = new value_type[length];
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            cudaMalloc(&data_, length * sizeof(value_type));
     }
+
     void _SetMemory(const value_type& val)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
+        if constexpr(Backend == ComputeBackend::CPU)
         {
-            data_[i] = val;
+            PARALLEL_FOR(length)
+            for (size_t i = 0; i < length; ++i)
+            {
+                data_[i] = val;
+            }
         }
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            CUDA_FUNC((CUDA::SetMemory_K<value_type, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, val)));
     }
+
     void _SetMemory(value_type* newData)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
+        if constexpr(Backend == ComputeBackend::CPU)
         {
-            data_[i] = newData[i];
+            PARALLEL_FOR(length)
+            for (size_t i = 0; i < length; ++i)
+            {
+                data_[i] = newData[i];
+            }
         }
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            CUDA_FUNC((CUDA::SetMemory_K<value_type, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, newData)));
     }
+
     template<typename E>
     requires(is_Array_Expression<E>::value)
     void _CollapseExpression(const E& expr, const size_t shift = 0)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
+        if constexpr(Backend == ComputeBackend::CPU)
         {
-            data_[i] = expr.get_element(i);
+            PARALLEL_FOR(length)
+            for (size_t i = 0; i < length; ++i)
+            {
+                data_[i] = expr.get_element(i);
+            }
         }
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            CUDA_FUNC((CUDA::CollapseExpression_K<E, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, expr, shift)));
     }
 };
 
