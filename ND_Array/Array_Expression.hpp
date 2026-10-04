@@ -22,6 +22,11 @@ public:
 
     inline const value_type get_element(const size_t i) const   {  return static_cast<const E&>(*this).get_element(i);   }
 
+    Array_Expression shallowCopy() const
+    {
+        return static_cast<const E&>(*this).shallowCopy();
+    }
+
     template <typename... ind_type>
     requires (sizeof...(ind_type) == terminal_type::N)
     inline const value_type operator()(const ind_type... indices) const   {   return static_cast<const E&>(*this)(indices...);    }

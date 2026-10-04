@@ -14,8 +14,8 @@ requires (  (ND::is_Array_Expression<E1>::value && ND::is_Array_Expression<E2>::
             (ND::is_Array_Expression<E2>::value && std::is_convertible<typename base_traits<E1>::value_type, typename E2::value_type>::value))
 class Binary_Op : public Array_Expression<Binary_Op<E1,OP,E2>>
 {
-    const E1& arg1;
-    const E2& arg2;
+    const E1 arg1;
+    const E2 arg2;
 
 public:
     
@@ -30,9 +30,34 @@ public:
     using generic_terminal_sub_type = typename base_traits<Binary_Op>::template generic_terminal_sub_type<any_type>;
     
     Binary_Op(const E1& a_1, const E2& a_2)
-    :arg1(a_1),arg2(a_2)
+    requires(ND::is_Array_Expression<E1>::value && ND::is_Array_Expression<E2>::value)
+    :arg1(a_1.shallowCopy()),arg2(a_2.shallowCopy())
+    {}
+    Binary_Op(const E1& a_1, const E2& a_2)
+    requires(not ND::is_Array_Expression<E1>::value)
+    :arg1(a_1),arg2(a_2.shallowCopy())
+    {}
+    Binary_Op(const E1& a_1, const E2& a_2)
+    requires(not ND::is_Array_Expression<E2>::value)
+    :arg1(a_1.shallowCopy()),arg2(a_2)
     {}
 
+
+    Binary_Op shallowCopy() const
+    {
+        if constexpr(not ND::is_Array_Expression<E1>::value)
+        {
+            return Binary_Op(arg1,arg2.shallowCopy());
+        }
+        else if constexpr(not ND::is_Array_Expression<E2>::value)
+        {
+            return Binary_Op(arg1.shallowCopy(),arg2);
+        }
+        else
+        {
+            return Binary_Op(arg1.shallowCopy(),arg2.shallowCopy());
+        }
+    }
     inline const value_type get_element(const size_t i) const
     {
         if constexpr(not ND::is_Array_Expression<E1>::value)

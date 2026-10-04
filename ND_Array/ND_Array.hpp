@@ -82,6 +82,11 @@ protected:
         is_original = is_or;
     }
 public:
+    // explicit shallow copy
+    Array shallowCopy() const
+    {
+        return Array(data_, false);
+    }
     // copy assigment operator
     const Array<T, firstDim, RestDims...>& operator=(const Array<T, firstDim, RestDims...>& other)
     {
@@ -404,6 +409,11 @@ protected:
         is_original = is_or;
     }
 public:
+    // explicit shallow copy
+    Array shallowCopy() const
+    {
+        return Array(data_, false);
+    }
     // copy assigment operator
     const Array<T, Dim>& operator=(const Array<T, Dim>& other)
     {

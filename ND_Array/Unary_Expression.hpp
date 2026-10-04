@@ -11,7 +11,7 @@ template <class OP, class E>
 requires (ND::is_Array_Expression<E>::value)
 class Unary_Op : public Array_Expression<Unary_Op<OP,E>>
 {
-    const E& arg;
+    const E arg;
 
 public:
 
@@ -27,9 +27,13 @@ public:
 
     
     Unary_Op(const E& a)
-    :arg(a)
+    :arg(a.shallowCopy())
     {}
 
+    Unary_Op shallowCopy() const
+    {
+        return Unary_Op(arg.shallowCopy());
+    }
     inline const value_type get_element(const size_t i) const
     {
         return OP::apply(arg.get_element(i));
