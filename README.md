@@ -1,9 +1,11 @@
-# N-D Array
+# N-D Array CUDA version
+
+This is a work in progress to add a CUDA backend to the ND::Array class.
 
 This project contains a header file that defines a N-dimensional array (variadic) template. This definition takes advantage of data locality which improves performance over e.g. nested `std::vectors`.
-Mathematical expression are also optimized using lazy evaluation which is implemented with expression templates. Expression such as `(A+B)*C` is compiled to a single `for` loop containing `(A[i]+B[i])*C[i]`, which makes it as efficient as hand-written C code. This also works when evaluating specific array element since only the specified element is effectively computed (e.g. `(A+B)(i,j,k)` simply compiles to `(A(i,j,k)+B(i,j,k))`).
+Mathematical expression are also optimized using lazy evaluation which is implemented with expression templates. Expression such as `(A+B)*C` is compiled to a single `for` loop containing `(A[i]+B[i])*C[i]`, which makes it as efficient as hand-written C code. ~~This also works when evaluating specific array element since only the specified element is effectively computed (e.g. `(A+B)(i,j,k)` simply compiles to `(A(i,j,k)+B(i,j,k))`).~~ This is not the case with the CUDA backend. Since data is on GPU, data should not be accessed directly.
 
-The file `speed_test.cpp` is a demonstration of the speed difference between this template and nested `std::valarray` (which also uses lazy evaluation) as well as other interesting performance metrics. `test.cpp` contains tests but can also serve as a comprehensive list of features.
+The file `speed_test.cpp/cu` is a demonstration of the speed difference between this template and nested `std::valarray` (which also uses lazy evaluation) as well as other interesting performance metrics. `test.cpp/cu` contains tests but can also serve as a comprehensive list of features.
 
 **Note:** Must be compiled with c++20
 
@@ -12,7 +14,7 @@ The file `speed_test.cpp` is a demonstration of the speed difference between thi
 ### Definition
 An array of `double` with shape `[Dim_1,Dim_2,Dim_3]` is defined with
 ```
-Array<double, Dim_1,Dim_2,Dim_3> A;
+Array<Backend::CUDA, double, Dim_1,Dim_2,Dim_3> A;
 ```
 By default, the values are not initialized. The array can be set to a specific `value` with
 ```
@@ -20,18 +22,18 @@ A = value;
 ```
 This can be combined:
 ```
-Array<double, Dim_1,Dim_2,Dim_3> B = value;
+Array<Backend::CUDA, double, Dim_1,Dim_2,Dim_3> B = value;
 // OR
-Array<double, Dim_1,Dim_2,Dim_3> C(value);
+Array<Backend::CUDA, double, Dim_1,Dim_2,Dim_3> C(value);
 ```
 Arrays can be declared with other sub-arrays if dimensions match. In the example below, `B` contains `Dim_1` copies of `A`.
 ```
-Array<double, Dim_2,Dim_3> A = 42;
-Array<double, Dim_1,Dim_2,Dim_3> B(A);
+Array<Backend::CUDA, double, Dim_2,Dim_3> A = 42;
+Array<Backend::CUDA, double, Dim_1,Dim_2,Dim_3> B(A);
 ```
 Finally, they can be created from expressions:
 ```
-Array<double, Dim_1,Dim_2,Dim_3> B = 2*A - 1;
+Array<Backend::CUDA, double, Dim_1,Dim_2,Dim_3> B = 2*A - 1;
 ```
 ### Operations
 The usual mathematical, boolean and bitwise operations are implemented (in parallel if OpenMP is enabled) and use lazy evaluation. By default, all operations are performed element-wise, except in obvious situation such as for min/max or sum which all return a single value.
@@ -50,15 +52,15 @@ auto D = A+B.eval();    // Array
 ### Access
 There are 3 ways to access array elements
 
-`Array::operator()` with the right amount of indices. This returns a reference to the corresponding element.
+~~`Array::operator()` with the right amount of indices. This returns a reference to the corresponding element.~~
 ```
-A(4,3,2) = 5;
+A(4,3,2) = 5; // NOT valid with CUDA backend
 std::cout<<A(4,3,2)<<std::endl;
 ```
 ```
 5
 ```
-`operator[]` with 1 index. This returns a slice of the original array at the specified index.
+`operator[]` with 1 index. This returns a slice of the original array at the specified index. This is still valid with CUDA as long as the array's dimension is 2 or more. If the dimension is 1, the data pointer is dereference and will crash.
 ```
 A[2] = 5;
 std::cout<<A[2]<<std::endl;
