@@ -37,6 +37,15 @@ __global__ void SetMemory_K(T* data, T* newData)
 
     data[idx] = newData[idx];
 }
+template<typename T, int N, int Sub_N>
+__global__ void SetMemoryRepeat_K(T* data, T* subData)
+{
+    const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= N)
+        return;
+
+    data[idx] = subData[idx%Sub_N];
+}
 template<typename E, int N>
 __global__ void CollapseExpression_K(typename E::value_type* data_, const E expr, const size_t shift = 0)
 {
@@ -151,11 +160,7 @@ public:
     {
         _AllocateMemory();
 
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
-        {
-            data_[i] = slice.data_[i%(RestDims*...)];
-        }
+        _SetMemoryRepeat(slice.data_);
     }
 
     // construct from Array_expressions
@@ -380,6 +385,21 @@ protected:
 
         else if constexpr(Backend == ComputeBackend::CUDA)
             CUDA_FUNC((CUDA::SetMemory_K<value_type, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, newData)));
+    }
+
+    void _SetMemoryRepeat(value_type* subData)
+    {
+        if constexpr(Backend == ComputeBackend::CPU)
+        {
+            PARALLEL_FOR(length)
+            for (size_t i = 0; i < length; ++i)
+            {
+                data_[i] = subData[i%(RestDims*...)];
+            }
+        }
+
+        else if constexpr(Backend == ComputeBackend::CUDA)
+            CUDA_FUNC((CUDA::SetMemoryRepeat_K<value_type, length, (RestDims*...)><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, subData)));
     }
 
     template<typename E>
