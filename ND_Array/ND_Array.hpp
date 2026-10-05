@@ -285,70 +285,36 @@ public:
 
     // += operator
     template<class E>
-    requires(is_Array_Expression<E>::value)
-    const Array<Backend, T, firstDim, RestDims...>& operator+=(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& operator+=(const E& RHS)
     {
-        *this = *this + expr;
-
-        return *this;
-    }
-    // scalar
-    const Array<Backend, T, firstDim, RestDims...>& operator+=(const value_type& val)
-    {
-        *this = *this + val;
+        *this = *this + RHS;
 
         return *this;
     }
 
     // -= operator
     template<class E>
-    requires(is_Array_Expression<E>::value)
-    const Array<Backend, T, firstDim, RestDims...>& operator-=(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& operator-=(const E& RHS)
     {
-        *this = *this - expr;
-
-        return *this;
-    }
-    // scalar
-    const Array<Backend, T, firstDim, RestDims...>& operator-=(const value_type& val)
-    {
-        *this = *this - val;
+        *this = *this - RHS;
 
         return *this;
     }
 
     // *= operator
     template<class E>
-    requires(is_Array_Expression<E>::value)
-    const Array<Backend, T, firstDim, RestDims...>& operator*=(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& operator*=(const E& RHS)
     {
-        *this = *this * expr;
-
-        return *this;
-    }
-    // scalar
-    const Array<Backend, T, firstDim, RestDims...>& operator*=(const value_type& val)
-    {
-        *this = *this * val;
+        *this = *this * RHS;
 
         return *this;
     }
 
     // /= operator
     template<class E>
-    requires(is_Array_Expression<E>::value)
-    const Array<Backend, T, firstDim, RestDims...>& operator/=(const E& expr)
+    const Array<Backend, T, firstDim, RestDims...>& operator/=(const E& RHS)
     {
-        *this = *this / expr;
-
-        return *this;
-    }
-    // scalar
-    const Array<Backend, T, firstDim, RestDims...>& operator/=(const value_type& val)
-    {
-        value_type inv_val = 1.0/val;
-
-        *this = *this * inv_val;
+        *this = *this / RHS;
 
         return *this;
     }
@@ -728,70 +694,36 @@ public:
 
     // += operator
     template<class E>
-    requires(is_Array_Expression<E>::value)
-    const Array<Backend, T, Dim>& operator+=(const E& expr)
+    const Array<Backend, T, Dim>& operator+=(const E& RHS)
     {
-        *this = *this + expr;
-
-        return *this;
-    }
-    // scalar
-    const Array<Backend, T, Dim>& operator+=(const value_type& val)
-    {
-        *this = *this + val;
+        *this = *this + RHS;
 
         return *this;
     }
 
     // -= operator
     template<class E>
-    requires(is_Array_Expression<E>::value)
-    const Array<Backend, T, Dim>& operator-=(const E& expr)
+    const Array<Backend, T, Dim>& operator-=(const E& RHS)
     {
-        *this = *this - expr;
-
-        return *this;
-    }
-    // scalar
-    const Array<Backend, T, Dim>& operator-=(const value_type& val)
-    {
-        *this = *this - val;
+        *this = *this - RHS;
 
         return *this;
     }
 
     // *= operator
     template<class E>
-    requires(is_Array_Expression<E>::value)
-    const Array<Backend, T, Dim>& operator*=(const E& expr)
+    const Array<Backend, T, Dim>& operator*=(const E& RHS)
     {
-        *this = *this * expr;
-
-        return *this;
-    }
-    // scalar
-    const Array<Backend, T, Dim>& operator*=(const value_type& val)
-    {
-        *this = *this * val;
+        *this = *this * RHS;
 
         return *this;
     }
 
     // /= operator
     template<class E>
-    requires(is_Array_Expression<E>::value)
-    const Array<Backend, T, Dim>& operator/=(const E& expr)
+    const Array<Backend, T, Dim>& operator/=(const E& RHS)
     {
-        *this = *this / expr;
-
-        return *this;
-    }
-    // scalar
-    const Array<Backend, T, Dim>& operator/=(const value_type& val)
-    {
-        value_type inv_val = 1.0/val;
-
-        *this = *this * inv_val;
+        *this = *this / RHS;
 
         return *this;
     }
