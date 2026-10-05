@@ -29,45 +29,38 @@ protected:
 
 public:
     template<class E>
-    void operator=(const Array_Expression<E>& expr)
+    requires(is_Array_Expression<E>::value)
+    void operator=(const E& expr)
     {
         PARALLEL_FOR(length)
         for (size_t i = 0; i < length; ++i)
             if(mask_.get_element(i))    arr_.data_[i] = expr.get_element(i);
     }
-    void operator=(const value_type val)
+    void operator=(const value_type& val)
     {
         PARALLEL_FOR(length)
         for (size_t i = 0; i < length; ++i)
             if(mask_.get_element(i))    arr_.data_[i] = val;
     }
     template<class E>
-    void operator+=(const Array_Expression<E>& expr)
+    void operator+=(const E& RHS)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
-            if(mask_.get_element(i))    arr_.data_[i] += expr.get_element(i);
+        *this = arr_ + RHS;
     }
     template<class E>
-    void operator-=(const Array_Expression<E>& expr)
+    void operator-=(const E& RHS)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
-            if(mask_.get_element(i))    arr_.data_[i] -= expr.get_element(i);
+        *this = arr_ - RHS;
     }
     template<class E>
-    void operator*=(const Array_Expression<E>& expr)
+    void operator*=(const E& RHS)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
-            if(mask_.get_element(i))    arr_.data_[i] *= expr.get_element(i);
+        *this = arr_ * RHS;
     }
     template<class E>
-    void operator/=(const Array_Expression<E>& expr)
+    void operator/=(const E& RHS)
     {
-        PARALLEL_FOR(length)
-        for (size_t i = 0; i < length; ++i)
-            if(mask_.get_element(i))    arr_.data_[i] /= expr.get_element(i);
+        *this = arr_  / RHS;
     }
 };
 

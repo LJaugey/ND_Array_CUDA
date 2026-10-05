@@ -133,6 +133,18 @@ TEST_CASE("Access operators") {
     A[A==c] = a;
     CHECK((A[1]==a).all());
 
+    A = a;
+    A[C<a] += c;
+    CHECK((A[1]==a+c).all());
+    A = a;
+    A[C<a] -= c;
+    CHECK((A[1]==a-c).all());
+    A = a;
+    A[C<a] *= c;
+    CHECK((A[1]==a*c).all());
+    A = a;
+    A[C<a] /= c;
+    CHECK((A[1]==a/c).all());
 }
 
 
