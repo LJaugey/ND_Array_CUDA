@@ -15,6 +15,9 @@ debug: CXXFLAGS+= -O0 -g
 debug: test speed_test
 
 
+test: tests/test.cu
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
 speed_test:  tests/speed_test.cu
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
