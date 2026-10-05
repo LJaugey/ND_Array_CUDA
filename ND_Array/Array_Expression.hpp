@@ -6,8 +6,9 @@
 
 #include "helper.hpp"
 
-
-
+#ifdef __CUDACC__
+#include <cub/cub.cuh>
+#endif
 
 namespace ND {
 
@@ -58,52 +59,95 @@ public:
     // min
     const value_type min() const
     {
-        value_type res = get_element(0);
-        
-        PARALLEL_FOR_REDUCE(min,terminal_type::length,res)
-        for (size_t i = 1; i < terminal_type::length; i++)
+        if constexpr (terminal_type::computeBackend == ComputeBackend::CPU)
         {
-            res = std::min(res,get_element(i));
-        }
+            value_type res = get_element(0);
+            
+            PARALLEL_FOR_REDUCE(min,terminal_type::length,res)
+            for (size_t i = 1; i < terminal_type::length; i++)
+            {
+                res = std::min(res,get_element(i));
+            }
 
-        return res;
+            return res;
+        }
+        else if constexpr (terminal_type::computeBackend == ComputeBackend::CUDA)
+        {
+            // TODO : Compute this without collapsing the result
+            terminal_type collapsedResult(static_cast<const E&>(*this));
+            
+            return collapsedResult.min();
+        }
     }
     // max
     const value_type max() const
     {
-        value_type res = get_element(0);
-        
-        PARALLEL_FOR_REDUCE(max,terminal_type::length,res)
-        for (size_t i = 1; i < terminal_type::length; i++)
+        if constexpr (terminal_type::computeBackend == ComputeBackend::CPU)
         {
-            res = std::max(res,get_element(i));
-        }
+            value_type res = get_element(0);
+            
+            PARALLEL_FOR_REDUCE(max,terminal_type::length,res)
+            for (size_t i = 1; i < terminal_type::length; i++)
+            {
+                res = std::max(res,get_element(i));
+            }
 
-        return res;
+            return res;
+        }
+        else if constexpr (terminal_type::computeBackend == ComputeBackend::CUDA)
+        {
+            // TODO : Compute this without collapsing the result
+            terminal_type collapsedResult(static_cast<const E&>(*this));
+            
+            return collapsedResult.max();
+        }
     }
     // sum
     const value_type sum() const
     {
-        value_type res = get_element(0);
-        
-        PARALLEL_FOR_REDUCE(+,terminal_type::length,res)
-        for (size_t i = 1; i < terminal_type::length; i++)
+        if constexpr (terminal_type::computeBackend == ComputeBackend::CPU)
         {
-            res += get_element(i);
+            value_type res = get_element(0);
+            
+            PARALLEL_FOR_REDUCE(+,terminal_type::length,res)
+            for (size_t i = 1; i < terminal_type::length; i++)
+            {
+                res += get_element(i);
+            }
+            
+            return res;
         }
-        
-        return res;
+        else if constexpr (terminal_type::computeBackend == ComputeBackend::CUDA)
+        {
+            // TODO : Compute this without collapsing the result
+            terminal_type collapsedResult(static_cast<const E&>(*this));
+            
+            return collapsedResult.sum();
+        }
     }
+
 
     // Check if all values are true
     const bool all() const
     {
-        for (size_t i = 0; i < terminal_type::length; i++)
+        if constexpr (terminal_type::computeBackend == ComputeBackend::CPU)
         {
-            if(get_element(i) == false) return false;
+            for (size_t i = 0; i < terminal_type::length; i++)
+            {
+                if(get_element(i) == false) return false;
+            }
+
+            return true;
         }
-        
-        return true;
+        else if constexpr (terminal_type::computeBackend == ComputeBackend::CUDA)
+        {
+            // TODO : Compute this without collapsing the result
+            terminal_type collapsedResult(static_cast<const E&>(*this));
+            
+            return collapsedResult.all();
+        }
+
+        return false;
     }
 };
 

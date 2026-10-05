@@ -20,8 +20,17 @@
 
 #ifdef __CUDACC__
 #define HOST_DEVICE __host__ __device__
+#define CUDA_FUNC(x) x
+#define CUDA_CALL( call )               \
+{                                       \
+cudaError_t result = call;              \
+if ( cudaSuccess != result )            \
+    std::cerr << "CUDA error " << result << " in " << __FILE__ << ":" << __LINE__ << ": " << cudaGetErrorString( result ) << " (" << #call << ")" << std::endl;  \
+}
 #else
 #define HOST_DEVICE
+#define CUDA_FUNC(x)
+#define CUDA_CALL( call )
 #endif
 
 
