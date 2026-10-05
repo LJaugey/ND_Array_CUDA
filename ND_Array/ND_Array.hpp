@@ -10,12 +10,8 @@
 #include "Binary_Expression.hpp"
 #include "Mask_Array.hpp"
 
+
 #ifdef __CUDACC__
-#define NON_CPU_ComputeBackend
-
-#define BLOCK_DIM_1D 1024
-#define BLOCK_DIM_LOG2_1D 10
-
 
 namespace ND::CUDA
 {

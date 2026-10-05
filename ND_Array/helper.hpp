@@ -27,6 +27,10 @@ cudaError_t result = call;              \
 if ( cudaSuccess != result )            \
     std::cerr << "CUDA error " << result << " in " << __FILE__ << ":" << __LINE__ << ": " << cudaGetErrorString( result ) << " (" << #call << ")" << std::endl;  \
 }
+
+#define BLOCK_DIM_1D 1024
+#define BLOCK_DIM_LOG2_1D 10
+
 #else
 #define HOST_DEVICE
 #define CUDA_FUNC(x)
