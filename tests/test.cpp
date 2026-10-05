@@ -14,13 +14,13 @@ const size_t dim_2 = 3;
 TEST_CASE("Constructors") {
 
     const double a = 0.0;
-    ND::Array<double, dim_2> A_sub(a);
+    ND::Array_CPU< double, dim_2> A_sub(a);
 
 
-    ND::Array<double,dim_1, dim_2> A1(a);
-    ND::Array<double,dim_1, dim_2> A2(0.0);
-    ND::Array<double,dim_1, dim_2> A3(0);
-    ND::Array<double,dim_1, dim_2> A4(A_sub);
+    ND::Array_CPU< double,dim_1, dim_2> A1(a);
+    ND::Array_CPU< double,dim_1, dim_2> A2(0.0);
+    ND::Array_CPU< double,dim_1, dim_2> A3(0);
+    ND::Array_CPU< double,dim_1, dim_2> A4(A_sub);
 
 
     CHECK((A1==A2).all());
@@ -35,8 +35,8 @@ TEST_CASE("Constructors") {
 
     
     //copy constructor
-    ND::Array<double,dim_1, dim_2> B(A1);
-    ND::Array<double,dim_1, dim_2> B1;
+    ND::Array_CPU< double,dim_1, dim_2> B(A1);
+    ND::Array_CPU< double,dim_1, dim_2> B1;
     B1 = A1;
 
     CHECK((B==A1).all());
@@ -46,8 +46,8 @@ TEST_CASE("Constructors") {
     //from array expression
     const double b = 2.0;
 
-    ND::Array<double,dim_1, dim_2> C(A1+b);
-    ND::Array<double,dim_1, dim_2> C1;
+    ND::Array_CPU< double,dim_1, dim_2> C(A1+b);
+    ND::Array_CPU< double,dim_1, dim_2> C1;
     C1 = A1 + b;
 
     CHECK((C==(A1+b).eval()).all());
@@ -59,8 +59,8 @@ TEST_CASE("Comparison operations") {
 
     const double a = 1.0;
 
-    ND::Array<double,dim_1, dim_2> A(a);
-    ND::Array<double,dim_1, dim_2> A_2(2*a);
+    ND::Array_CPU< double,dim_1, dim_2> A(a);
+    ND::Array_CPU< double,dim_1, dim_2> A_2(2*a);
 
     CHECK((A==A).all());
     CHECK((A_2==A+A).all());
@@ -87,10 +87,10 @@ TEST_CASE("Access operators") {
     const double a = 2.0;
     const double b = 1.0;
 
-    ND::Array<double,dim_1, dim_2> A(a);
-    ND::Array<double,dim_1, dim_2> B(b);
-    ND::Array<double,dim_2> A_s(a);
-    ND::Array<double,dim_2> B_s(b);
+    ND::Array_CPU< double,dim_1, dim_2> A(a);
+    ND::Array_CPU< double,dim_1, dim_2> B(b);
+    ND::Array_CPU< double,dim_2> A_s(a);
+    ND::Array_CPU< double,dim_2> B_s(b);
 
     CHECK((A==A).all());
     CHECK((A[0]==A_s).all());
@@ -124,7 +124,7 @@ TEST_CASE("Access operators") {
 
     // Mask indexing
     double c = (a+b)/2.0;
-    ND::Array<double,dim_1, dim_2> C;
+    ND::Array_CPU< double,dim_1, dim_2> C;
     C[0] = a;   C[1] = b;
 
     A[C<a] = c;
@@ -142,15 +142,15 @@ TEST_CASE("Arithmetic operations") {
     const double b = 0.2;
     const double c = -0.7;
 
-    ND::Array<double,dim_1, dim_2> A(a);
-    ND::Array<double,dim_1, dim_2> B(b);
-    ND::Array<double,dim_1, dim_2> C(c);
+    ND::Array_CPU< double,dim_1, dim_2> A(a);
+    ND::Array_CPU< double,dim_1, dim_2> B(b);
+    ND::Array_CPU< double,dim_1, dim_2> C(c);
 
 
 
     SUBCASE("Addition") {
-        ND::Array<double,dim_1, dim_2> A_B(a+b);
-        ND::Array<double,dim_1, dim_2> A_B_C(a+b+c);
+        ND::Array_CPU< double,dim_1, dim_2> A_B(a+b);
+        ND::Array_CPU< double,dim_1, dim_2> A_B_C(a+b+c);
 
         CHECK((A+B == A_B).all());
         CHECK((A+b == A_B).all());
@@ -166,8 +166,8 @@ TEST_CASE("Arithmetic operations") {
 
     }
     SUBCASE("Subtraction") {
-        ND::Array<double,dim_1, dim_2> A_B(a-b);
-        ND::Array<double,dim_1, dim_2> A_B_C(a-b-c);
+        ND::Array_CPU< double,dim_1, dim_2> A_B(a-b);
+        ND::Array_CPU< double,dim_1, dim_2> A_B_C(a-b-c);
 
         CHECK((A-B == A_B).all());
         CHECK((A-b == A_B).all());
@@ -182,8 +182,8 @@ TEST_CASE("Arithmetic operations") {
         CHECK(((B-=c) == (b-C)).all());
     }
     SUBCASE("Multiplication") {
-        ND::Array<double,dim_1, dim_2> A_B(a*b);
-        ND::Array<double,dim_1, dim_2> A_B_C(a*b*c);
+        ND::Array_CPU< double,dim_1, dim_2> A_B(a*b);
+        ND::Array_CPU< double,dim_1, dim_2> A_B_C(a*b*c);
 
         CHECK((A*B == A_B).all());
         CHECK((A*b == A_B).all());
@@ -198,8 +198,8 @@ TEST_CASE("Arithmetic operations") {
         CHECK(((B*=c) == (b*C)).all());
     }
     SUBCASE("Division") {
-        ND::Array<double,dim_1, dim_2> A_B(a/b);
-        ND::Array<double,dim_1, dim_2> A_B_C(a/b/c);
+        ND::Array_CPU< double,dim_1, dim_2> A_B(a/b);
+        ND::Array_CPU< double,dim_1, dim_2> A_B_C(a/b/c);
 
         CHECK((A/B == A_B).all());
         CHECK((A/b == A_B).all());
@@ -222,9 +222,9 @@ TEST_CASE("Trigonometric/Hyperbolic operations") {
     const double b = -0.7;
     const double c = 1.7;
 
-    ND::Array<double,dim_1, dim_2> A(a);
-    ND::Array<double,dim_1, dim_2> B(b);
-    ND::Array<double,dim_1, dim_2> C(c);
+    ND::Array_CPU< double,dim_1, dim_2> A(a);
+    ND::Array_CPU< double,dim_1, dim_2> B(b);
+    ND::Array_CPU< double,dim_1, dim_2> C(c);
 
 
     
@@ -290,8 +290,8 @@ TEST_CASE("bitwise operations") {
     const int a = 5;
     const int b = 2;
 
-    ND::Array<int,dim_1, dim_2> A(a);
-    ND::Array<int,dim_1, dim_2> B(b);
+    ND::Array_CPU< int,dim_1, dim_2> A(a);
+    ND::Array_CPU< int,dim_1, dim_2> B(b);
 
 
     CHECK_EQ((A&B)(0,0), a&b);
@@ -308,8 +308,8 @@ TEST_CASE("Other") {
     const double a = 1.7;
     const double a_ = 1.2;
 
-    ND::Array<double,dim_1, dim_2> A(a);
-    ND::Array<double,dim_1, dim_2> A_(a_);
+    ND::Array_CPU< double,dim_1, dim_2> A(a);
+    ND::Array_CPU< double,dim_1, dim_2> A_(a_);
 
     CHECK_EQ(A.size(0), dim_1);
     CHECK_EQ(A.size(1), dim_2);
@@ -332,7 +332,7 @@ TEST_CASE("Other") {
     CHECK_EQ(floor(A)(0,0), floor(a));
 
 
-    ND::Array<double,dim_1, dim_2> B;
+    ND::Array_CPU< double,dim_1, dim_2> B;
     const double x = 1.0;
     const double y = 2.0;
 
@@ -349,8 +349,8 @@ TEST_CASE("Other") {
 
 
     int c = 5; int d = 2;
-    ND::Array<int, dim_1,dim_2> C(c);
-    ND::Array<int, dim_1,dim_2> D(d);
+    ND::Array_CPU< int, dim_1,dim_2> C(c);
+    ND::Array_CPU< int, dim_1,dim_2> D(d);
 
     CHECK_EQ((C%D)(0,0), c%d);
 }

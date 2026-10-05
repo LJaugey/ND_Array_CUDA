@@ -21,7 +21,7 @@ const int N = 200;
 
 const int dim = 3;
 
-void func_par(ND::Array<double,dim,dim,dim> u)
+void func_par(ND::Array_CPU<double,dim,dim,dim> u)
 {
     for(int l = 0; l<dim; l++)
     {
@@ -34,7 +34,7 @@ void func_par(ND::Array<double,dim,dim,dim> u)
         }
     }
 }
-void func_brac(ND::Array<double,dim,dim,dim> u)
+void func_brac(ND::Array_CPU<double,dim,dim,dim> u)
 {
     for(int l = 0; l<dim; l++)
     {
@@ -77,9 +77,9 @@ int main()
     cout<<"Testing lazy evaluation speed-up"<<endl<<endl;
     cout<<"================================"<<endl<<endl;
 
-    ND::Array<double,N,N,dim,dim,dim> A(2.0);
-    ND::Array<double,N,N,dim,dim,dim> B(0.5);
-    ND::Array<double,N,N,dim,dim,dim> C(0.0);
+    ND::Array_CPU<double,N,N,dim,dim,dim> A(2.0);
+    ND::Array_CPU<double,N,N,dim,dim,dim> B(0.5);
+    ND::Array_CPU<double,N,N,dim,dim,dim> C(0.0);
 
 
     cout<<endl<<"Normal evaluation : ";
@@ -178,7 +178,7 @@ int main()
     cout<<endl<<endl;
 
 
-    ND::Array<double,N,N,dim,dim,dim> u;
+    ND::Array_CPU<double,N,N,dim,dim,dim> u;
     u.fill(1.0);
 
     Mat_5 u_(Mat_4(Mat_3(Mat_2(Mat_1(1.0, dim), dim), dim), N), N);

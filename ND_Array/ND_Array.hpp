@@ -187,7 +187,7 @@ public:
                 delete[] data_;
 
             else if constexpr(Backend == ComputeBackend::CUDA)
-                cudaFree(data_);
+                CUDA_FUNC(cudaFree(data_));
         }
     }
 
@@ -433,10 +433,6 @@ class Array<Backend, T, Dim> : public Array_Expression<Array<Backend, T, Dim>>
     template<ComputeBackend Backend_, typename T_, size_t f_Dim, size_t... R_dims>
     friend class Mask_Array;
     
-    //template<typename E1, typename OP, typename E2>
-    //friend class Binary_Op;
-    //template<typename E, typename OP>
-    //friend class Unary_Op;
     
 public:
 
@@ -548,7 +544,7 @@ public:
                 delete[] data_;
 
             else if constexpr(Backend == ComputeBackend::CUDA)
-                cudaFree(data_);
+                CUDA_FUNC(cudaFree(data_));
         }
     }
 
@@ -733,6 +729,13 @@ protected:
 };
 
 
+template<typename T, size_t firstDim, size_t... RestDims>
+using Array_CPU = Array<ComputeBackend::CPU, T, firstDim, RestDims...>;
+
+#ifdef __CUDACC__
+template<typename T, size_t firstDim, size_t... RestDims>
+using Array_CUDA = Array<ComputeBackend::CUDA, T, firstDim, RestDims...>;
+#endif
 
 }
 
