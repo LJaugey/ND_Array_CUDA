@@ -72,24 +72,6 @@ requires(std::is_base_of<Array_Expression<E>,E>::value)
 struct is_Array_Expression<E> : std::true_type {};
 
 
-// This allows to have Array_Expression of other Array_Expression. This might be undesirable.
-template <class E>
-struct base_traits<Array_Expression<E>>
-{
-    typedef base_traits<E>::value_type value_type;
-
-    template<typename any_type>
-    using generic_terminal_type = typename base_traits<E>::template generic_terminal_type<any_type>;
-
-    template<typename any_type>
-    using generic_terminal_sub_type = typename base_traits<E>::template generic_terminal_sub_type<any_type>;
-    
-
-    typedef generic_terminal_type<value_type> terminal_type;
-    typedef generic_terminal_sub_type<value_type> terminal_sub_type;
-};
-
-
 // Unary operation
 template <class OP, class E>
 requires (ND::is_Array_Expression<E>::value)
