@@ -202,7 +202,7 @@ public:
 
     // access element
     template <typename... ind_type>
-    requires (sizeof...(ind_type) == N)
+    requires (sizeof...(ind_type) == N && Backend == ComputeBackend::CPU)
     inline value_type& operator()(ind_type... indices)
     {
         size_t offset = 0;
@@ -214,7 +214,7 @@ public:
         return data_[offset];
     }
     template <typename... ind_type>
-    requires (sizeof...(ind_type) == N)
+    requires (sizeof...(ind_type) == N && Backend == ComputeBackend::CPU)
     inline const value_type operator()(ind_type... indices) const
     {
         size_t offset = 0;
@@ -640,10 +640,26 @@ public:
 
 
     // access element
-    inline value_type& operator()(size_t index)                 {   return data_[index];    }
-    inline const value_type operator()(size_t index) const      {   return data_[index];    }
-    inline value_type& operator[](size_t index)                 {   return data_[index];    }
-    inline const value_type operator[](size_t index) const      {   return data_[index];    }
+    inline value_type& operator()(size_t index)
+    requires(Backend == ComputeBackend::CPU)
+    {
+        return data_[index];
+    }
+    inline const value_type operator()(size_t index) const
+    requires(Backend == ComputeBackend::CPU)
+    {
+        return data_[index];
+    }
+    inline value_type& operator[](size_t index)
+    requires(Backend == ComputeBackend::CPU)
+    {
+        return data_[index];
+    }
+    inline const value_type operator[](size_t index) const
+    requires(Backend == ComputeBackend::CPU)
+    {
+        return data_[index];
+    }
 
     Mask_Array<Backend, T, Dim> operator[](const Array<Backend, bool, Dim> mask)  {   return Mask_Array(*this, mask); }
 
