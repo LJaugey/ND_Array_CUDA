@@ -282,7 +282,7 @@ public:
     }
 
 
-    inline const size_t size(const size_t index = 0) const
+    inline size_t size(const size_t index = 0) const
     {
         return Dims[index];
     }
@@ -331,7 +331,7 @@ public:
 
 
 #ifdef __CUDACC__
-    const bool all()
+    bool all()
     {
         bool* d_result;
         void* d_temp = nullptr;

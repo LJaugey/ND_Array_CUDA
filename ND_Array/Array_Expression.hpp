@@ -128,7 +128,7 @@ public:
 
 
     // Check if all values are true
-    const bool all() const
+    bool all() const
     {
         if constexpr (terminal_type::computeBackend == ComputeBackend::CPU)
         {
