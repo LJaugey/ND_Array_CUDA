@@ -498,7 +498,7 @@ protected:
         }
 
         else if constexpr(Backend == ComputeBackend::CUDA)
-            CUDA_FUNC((CUDA::CollapseExpression_K<E, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, expr, shift)));
+            CUDA_FUNC((CUDA::CollapseExpression_K<E, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, expr.shallowCopy(), shift)));
     }
 };
 
