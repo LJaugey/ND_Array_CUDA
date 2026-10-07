@@ -493,7 +493,7 @@ protected:
             PARALLEL_FOR(length)
             for (size_t i = 0; i < length; ++i)
             {
-                data_[i] = expr.get_element(i);
+                data_[i] = expr.get_element(shift + i);
             }
         }
 

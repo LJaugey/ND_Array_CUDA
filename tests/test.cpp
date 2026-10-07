@@ -121,11 +121,14 @@ TEST_CASE("Access operators") {
     CHECK_EQ(A(0,0),b);
     CHECK_EQ(A(dim_1-1,dim_2-1),a);
 
+    ND::Array_CPU< double,dim_1, dim_2> C;
+    C[0] = a;   C[1] = b;
+    
+    CHECK(((C+b)[0]==A_s+B_s).all());
+    CHECK(((C+b)[1]==B_s+B_s).all());
 
     // Mask indexing
     double c = (a+b)/2.0;
-    ND::Array_CPU< double,dim_1, dim_2> C;
-    C[0] = a;   C[1] = b;
 
     A[C<a] = c;
     CHECK((A[1]==c).all());
