@@ -33,15 +33,6 @@ __global__ void SetMemory_K(T* data, T* newData)
 
     data[idx] = newData[idx];
 }
-template<typename T, int N, int Sub_N>
-__global__ void SetMemoryRepeat_K(T* data, T* subData)
-{
-    const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= N)
-        return;
-
-    data[idx] = subData[idx%Sub_N];
-}
 template<typename E, int N>
 __global__ void CollapseExpression_K(typename E::value_type* data_, const E expr, const size_t shift = 0)
 {
@@ -50,6 +41,16 @@ __global__ void CollapseExpression_K(typename E::value_type* data_, const E expr
         return;
 
     data_[idx] = expr.get_element(shift + idx);
+}
+
+template<typename E, int N, int Sub_N>
+__global__ void CollapseSubExpression_K(typename E::value_type* data_, const E expr)
+{
+    const size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= N)
+        return;
+
+    data_[idx] = expr.get_element(idx % Sub_N);
 }
 
 struct LogicalAnd
@@ -156,17 +157,7 @@ public:
         
         return *this;
     }
-    // constructor from N-1 dimensional array
-    template<size_t... RestDims_>
-    requires (sizeof...(RestDims_) > 0 && 
-        std::is_same<Array<Backend, T, RestDims_...>, Array<Backend, T, RestDims...>>::value)
-    Array(const Array<Backend, T, RestDims_...>& slice)
-    : is_original(true)
-    {
-        _AllocateMemory();
-
-        _SetMemoryRepeat(slice.data_);
-    }
+    
 
     // construct from Array_expressions
     // Shift can be used if N<expr.N (e.g. operator[] on expressions)
@@ -469,36 +460,40 @@ protected:
             CUDA_FUNC((CUDA::SetMemory_K<value_type, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, newData)));
     }
 
-    void _SetMemoryRepeat(value_type* subData)
-    {
-        if constexpr(Backend == ComputeBackend::CPU)
-        {
-            PARALLEL_FOR(length)
-            for (size_t i = 0; i < length; ++i)
-            {
-                data_[i] = subData[i%(RestDims*...)];
-            }
-        }
-
-        else if constexpr(Backend == ComputeBackend::CUDA)
-            CUDA_FUNC((CUDA::SetMemoryRepeat_K<value_type, length, (RestDims*...)><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, subData)));
-    }
-
     template<typename E>
     requires(is_Array_Expression<E>::value)
     void _CollapseExpression(const E& expr, const size_t shift = 0)
     {
-        if constexpr(Backend == ComputeBackend::CPU)
+        if constexpr (std::is_same_v<terminal_sub_type, typename E::terminal_type>)
         {
-            PARALLEL_FOR(length)
-            for (size_t i = 0; i < length; ++i)
+            constexpr size_t sub_N = (1 * ... * RestDims);
+        
+            if constexpr (Backend == ComputeBackend::CPU)
             {
-                data_[i] = expr.get_element(shift + i);
+                PARALLEL_FOR(length)
+                for (size_t i = 0; i < length; ++i)
+                {
+                    data_[i] = expr.get_element(i % sub_N);
+                }
             }
+        
+            else if constexpr (Backend == ComputeBackend::CUDA)
+                CUDA_FUNC((CUDA::CollapseSubExpression_K<E, length, sub_N> << <GRID_SIZE, BLOCK_DIM_1D >> > (data_, expr.shallowCopy())));
         }
-
-        else if constexpr(Backend == ComputeBackend::CUDA)
-            CUDA_FUNC((CUDA::CollapseExpression_K<E, length><<<GRID_SIZE, BLOCK_DIM_1D>>>(data_, expr.shallowCopy(), shift)));
+        else
+        {
+            if constexpr (Backend == ComputeBackend::CPU)
+            {
+                PARALLEL_FOR(length)
+                for (size_t i = 0; i < length; ++i)
+                {
+                    data_[i] = expr.get_element(shift + i);
+                }
+            }
+        
+            else if constexpr (Backend == ComputeBackend::CUDA)
+                CUDA_FUNC((CUDA::CollapseExpression_K<E, length> << <GRID_SIZE, BLOCK_DIM_1D >> > (data_, expr.shallowCopy(), shift)));
+        }
     }
 };
 
