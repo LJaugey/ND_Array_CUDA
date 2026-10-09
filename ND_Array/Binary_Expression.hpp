@@ -34,11 +34,11 @@ public:
     :arg1(a_1.shallowCopy()),arg2(a_2.shallowCopy())
     {}
     Binary_Op(const E1& a_1, const E2& a_2)
-    requires(not ND::is_Array_Expression<E1>::value)
+    requires(not ND::is_Array_Expression<E1>::value && ND::is_Array_Expression<E2>::value)
     :arg1(a_1),arg2(a_2.shallowCopy())
     {}
     Binary_Op(const E1& a_1, const E2& a_2)
-    requires(not ND::is_Array_Expression<E2>::value)
+    requires(ND::is_Array_Expression<E1>::value && not ND::is_Array_Expression<E2>::value)
     :arg1(a_1.shallowCopy()),arg2(a_2)
     {}
 
