@@ -24,16 +24,6 @@ public:
     HOST_DEVICE
     inline const value_type get_element(const size_t i) const   {  return static_cast<const E&>(*this).get_element(i);   }
 
-    Array_Expression shallowCopy() const
-    {
-        return static_cast<const E&>(*this).shallowCopy();
-    }
-
-    template <typename... ind_type>
-    requires (sizeof...(ind_type) == terminal_type::N)
-    inline const value_type operator()(const ind_type... indices) const   {   return static_cast<const E&>(*this)(indices...);    }
-
-
     inline const terminal_type eval() const
     {
         return terminal_type(static_cast<const E&>(*this));    // Guaranteed copy elision
@@ -41,15 +31,9 @@ public:
 
     // operator[] only collapses sub-array
     inline const terminal_sub_type operator[](size_t index) const
+    requires(terminal_type::N > 1)
     {
-        if constexpr (terminal_type::N==1)
-        {
-            return get_element(index);
-        }
-        else
-        {
-            return terminal_sub_type(static_cast<const E&>(*this), index*terminal_sub_type::length);  // Guaranteed copy elision
-        }
+        return terminal_sub_type(static_cast<const E&>(*this), index*terminal_sub_type::length);  // Guaranteed copy elision
     }
 
     
@@ -74,9 +58,7 @@ public:
         else if constexpr (terminal_type::computeBackend == ComputeBackend::CUDA)
         {
             // TODO : Compute this without collapsing the result
-            terminal_type collapsedResult(static_cast<const E&>(*this));
-            
-            return collapsedResult.min();
+            return terminal_type(static_cast<const E&>(*this)).min();
         }
     }
     // max
@@ -97,9 +79,7 @@ public:
         else if constexpr (terminal_type::computeBackend == ComputeBackend::CUDA)
         {
             // TODO : Compute this without collapsing the result
-            terminal_type collapsedResult(static_cast<const E&>(*this));
-            
-            return collapsedResult.max();
+            return terminal_type(static_cast<const E&>(*this)).max();
         }
     }
     // sum
@@ -120,9 +100,7 @@ public:
         else if constexpr (terminal_type::computeBackend == ComputeBackend::CUDA)
         {
             // TODO : Compute this without collapsing the result
-            terminal_type collapsedResult(static_cast<const E&>(*this));
-            
-            return collapsedResult.sum();
+            return terminal_type(static_cast<const E&>(*this)).sum();
         }
     }
 
@@ -142,9 +120,7 @@ public:
         else if constexpr (terminal_type::computeBackend == ComputeBackend::CUDA)
         {
             // TODO : Compute this without collapsing the result
-            terminal_type collapsedResult(static_cast<const E&>(*this));
-            
-            return collapsedResult.all();
+            return terminal_type(static_cast<const E&>(*this)).all();
         }
 
         return false;
