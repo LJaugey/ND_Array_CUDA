@@ -100,6 +100,10 @@ protected:
     bool is_original;
 
 #ifdef __CUDACC__
+    value_type* d_reductionResult_ = nullptr;
+    void* d_tempBuffer_ = nullptr;
+    size_t temp_bytes_ = 0;
+
     static constexpr int GRID_SIZE = (length + BLOCK_DIM_1D - 1) >> BLOCK_DIM_LOG2_1D;
 #endif
 
@@ -324,96 +328,46 @@ public:
 #ifdef __CUDACC__
     bool all()
     {
-        bool* d_result;
-        void* d_temp = nullptr;
-        size_t temp_bytes = 0;
-        bool init = true;
-        
-        CUDA_CALL(cudaMalloc(&d_result, sizeof(bool)));
-
         CUDA_CALL(cub::DeviceReduce::Reduce(
-            d_temp, temp_bytes,
-            data_, d_result, length,
-            CUDA::LogicalAnd{}, init));
-
-        CUDA_CALL(cudaMalloc(&d_temp, temp_bytes));
-
-        CUDA_CALL(cub::DeviceReduce::Reduce(
-            d_temp, temp_bytes,
-            data_, d_result, length,
-            CUDA::LogicalAnd{}, init));
+            d_tempBuffer_, temp_bytes_,
+            data_, static_cast<bool*>(d_reductionResult_), length,
+            CUDA::LogicalAnd{}, true));
 
         bool result;
-        cudaMemcpy(&result, d_result, sizeof(bool), cudaMemcpyDeviceToHost);
-
-        CUDA_CALL(cudaFree(d_temp));
-        CUDA_CALL(cudaFree(d_result));
+        cudaMemcpy(&result, static_cast<bool*>(d_reductionResult_), sizeof(bool), cudaMemcpyDeviceToHost);
 
         return result;
     }
     const value_type min()
     {
-        value_type* d_result;
-        void* d_temp = nullptr;
-        size_t temp_bytes = 0;
-        
-        CUDA_CALL(cudaMalloc(&d_result, sizeof(value_type)));
-
         CUDA_CALL(cub::DeviceReduce::Min(
-            d_temp, temp_bytes,
-            data_, d_result, length));
-
-        CUDA_CALL(cudaMalloc(&d_temp, temp_bytes));
-
-        CUDA_CALL(cub::DeviceReduce::Min(
-            d_temp, temp_bytes,
-            data_, d_result, length));
+            d_tempBuffer_, temp_bytes_,
+            data_, d_reductionResult_, length));
 
         value_type result;
-        cudaMemcpy(&result, d_result, sizeof(value_type), cudaMemcpyDeviceToHost);
-
-        CUDA_CALL(cudaFree(d_temp));
-        CUDA_CALL(cudaFree(d_result));
+        cudaMemcpy(&result, d_reductionResult_, sizeof(value_type), cudaMemcpyDeviceToHost);
 
         return result;
     }
     const value_type max()
     {
-        value_type* d_result;
-        void* d_temp = nullptr;
-        size_t temp_bytes = 0;
-        
-        CUDA_CALL(cudaMalloc(&d_result, sizeof(value_type)));
-
         CUDA_CALL(cub::DeviceReduce::Max(
-            d_temp, temp_bytes,
-            data_, d_result, length));
-
-        CUDA_CALL(cudaMalloc(&d_temp, temp_bytes));
-
-        CUDA_CALL(cub::DeviceReduce::Max(
-            d_temp, temp_bytes,
-            data_, d_result, length));
+            d_tempBuffer_, temp_bytes_,
+            data_, d_reductionResult_, length));
 
         value_type result;
-        cudaMemcpy(&result, d_result, sizeof(value_type), cudaMemcpyDeviceToHost);
-
-        CUDA_CALL(cudaFree(d_temp));
-        CUDA_CALL(cudaFree(d_result));
+        cudaMemcpy(&result, d_reductionResult_, sizeof(value_type), cudaMemcpyDeviceToHost);
 
         return result;
     }
     const value_type sum()
     {
-        value_type* d_result;
-        CUDA_CALL(cudaMalloc(&d_result, sizeof(value_type)));
-
-        CUDA_CALL(cub::DeviceReduce::Sum(data_, d_result, length));
+        CUDA_CALL(cub::DeviceReduce::Sum(
+            d_tempBuffer_, temp_bytes_,
+            data_, d_reductionResult_, length));
 
         value_type result;
-        cudaMemcpy(&result, d_result, sizeof(value_type), cudaMemcpyDeviceToHost);
-
-        CUDA_CALL(cudaFree(d_result));
+        cudaMemcpy(&result, d_reductionResult_, sizeof(value_type), cudaMemcpyDeviceToHost);
 
         return result;
     }
@@ -426,8 +380,32 @@ protected:
         if constexpr(Backend == ComputeBackend::CPU)
             data_ = new value_type[length];
 
-        else if constexpr(Backend == ComputeBackend::CUDA)
-            CUDA_CALL(cudaMalloc(&data_, length * sizeof(value_type)));
+        else if constexpr (Backend == ComputeBackend::CUDA)
+        {
+            size_t new_temp_bytes = 0;
+
+            CUDA_CALL(cub::DeviceReduce::Reduce(d_tempBuffer_, new_temp_bytes,
+                    data_, d_reductionResult_, length, CUDA::LogicalAnd{}, true));
+            temp_bytes_ = std::max(temp_bytes_, new_temp_bytes);
+
+            CUDA_CALL(cub::DeviceReduce::Min(d_tempBuffer_, new_temp_bytes,
+                    data_, d_reductionResult_, length));
+            temp_bytes_ = std::max(temp_bytes_, new_temp_bytes);
+            
+            CUDA_CALL(cub::DeviceReduce::Max(d_tempBuffer_, new_temp_bytes,
+                    data_, d_reductionResult_, length));
+            temp_bytes_ = std::max(temp_bytes_, new_temp_bytes);
+            
+            CUDA_CALL(cub::DeviceReduce::Sum(d_tempBuffer_, new_temp_bytes,
+                    data_, d_reductionResult_, length));
+            temp_bytes_ = std::max(temp_bytes_, new_temp_bytes);
+
+            // Single malloc for data_, reduction result and CUB temp buffer
+            CUDA_CALL(cudaMalloc(&data_, (length + 1) * sizeof(value_type) + temp_bytes_));
+
+            d_reductionResult_ = data_ + length;
+            d_tempBuffer_ = d_reductionResult_ + 1;
+        }
     }
 
     void _SetMemory(const value_type& val)
